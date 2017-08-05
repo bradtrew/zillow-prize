@@ -1,6 +1,5 @@
 library(xgboost)
-library(tidyverse)
-library(lubridate)
+
 transactions <- read_csv("~/Documents/Kaggle/zillow/data/train_2016_v2.csv")
 
 properties <- read_csv("~/Documents/Kaggle/zillow/data/properties_2016.csv")
@@ -74,7 +73,7 @@ transactions %>% mutate(month = as.factor(month(date))) %>% lm(logerror~month, d
 properties %>% 
   inner_join(transactions) %>% 
   nrow
-
+  
 properties %>%
   inner_join(transactions) %>% 
   group_by(zoning_property) %>% 
@@ -82,8 +81,8 @@ properties %>%
             var = var(logerror),
             mean = mean(logerror)) %>%
   arrange(desc(n), desc(var)) %>% View
-
-
+  
+  
 properties %>% inner_join(transactions) %>% group_by(region_zip) %>% 
   summarise(n()) %>% View
 
@@ -92,34 +91,34 @@ library(leaflet)
 
 properties %>% filter(region_zip==97319) %>% inner_join(transactions) %>% 
   summarise(max(logerror), min(logerror), mean(logerror))
-arrange(longitude) %>%
+  arrange(longitude) %>%
   ggplot(aes(y= latitude, x=longitude, color=logerror)) + geom_point() +
   scale_color_continuous(limits = c())
 
-
+  
 properties %>% filter(region_zip==97328) %>% inner_join(transactions) %>% 
-  ggplot(aes(y= latitude, x=longitude, color=logerror)) + geom_point() +
-  scale_color_continuous(limits = c())
-
-
-96987
+    ggplot(aes(y= latitude, x=longitude, color=logerror)) + geom_point() +
+    scale_color_continuous(limits = c())
+  
+  
+    96987
 properties %>% filter(region_zip==97319) %>%  inner_join(transactions) %>% .[668,] %>%  pull(logerror)
 
 
 
 properties %>% filter(region_zip==97328) %>% inner_join(transactions) %>%  .[83,] %>% 
   pull(logerror)
-pull(latitude) %>% which.min
-%>%  pull(latitude) %>% which.min
-
-
+  pull(latitude) %>% which.min
+  %>%  pull(latitude) %>% which.min
+  
+  
 properties %>% filter(region_zip==97328) %>% 
   inner_join(transactions) %>% summarise(sd(logerror))
 
-
-
-
-
+  
+  
+  
+  
 # distance from centre of zip/n'hood/ - flag if more than 2 stds of average - mahalanobis
 
 
@@ -132,19 +131,15 @@ S <- matrix(c(var(prop97328$latitude),
               cov(prop97328$latitude,prop97328$longitude),
               cov(prop97328$latitude,prop97328$longitude),
               var(prop97328$longitude)
-), nrow = 2, byrow = TRUE)
+              ), nrow = 2, byrow = TRUE)
 mu <- c(mean(prop97328$latitude), mean(prop97328$longitude))
 
 
 detect_outliers <- function(dat) {
   if(nrow(dat) <10) {
-    dat$is_outlier <- FALSE
-    dat$mahal_dist <- rep(NA,nrow(dat))
     return(dat)
   }
   if((var(dat$latitude) + var(dat$longitude)) < 10){
-    dat$is_outlier <- FALSE
-    dat$mahal_dist <- rep(NA,nrow(dat))
     return(dat)
   }
   S <- matrix(c(var(dat$latitude),
@@ -156,26 +151,31 @@ detect_outliers <- function(dat) {
   dists <- mahalanobis(cbind(dat$latitude, dat$longitude), center = mu, cov = S)  
   sd_mh <- sd(dists)
   avg_mh <- mean(dists)
-  ub <- avg_mh + 3*sd_mh
+  lb <- avg_mh - 3*sd_mh
   dat$is_outlier <- (abs(dists) > ub)
-  dat$mahal_dist <- dists
   dat
 }
 
-props_with_outliers <- properties %>% 
+new_dat <- properties %>% 
   split(.$region_zip) %>% 
   map(detect_outliers) %>% 
   do.call('rbind', .)
 
 
-props_with_outliers %>% inner_join(transactions) %>% 
-  filter(is_outlier==1) %>% 
-  summarise(mean(logerror), median(logerror), mean(abs(logerror)), n())
+
+
+(abs(dists) > ub) %>% sum
+prop97328[abs(dists) > ub,] %>% pull(logerror) %>% mean
+
+
+
+abs %>% `>`(3) %>% sum
+
+prop97328$latitude %>% length
 
 
 
 
 
 
-
-
+  
